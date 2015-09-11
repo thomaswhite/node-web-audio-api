@@ -59,7 +59,71 @@ if (require.main === module) { // Just to avoid mocha running this
   };
 
 
-  function extractRegions  (Peaks, duration, min_percentage, minDuration ) {
+
+    function getRegions (audioBuffer) {
+        var peaks = [];
+        var min,  max;
+        var channels = audioBuffer.data;
+        var channel_1 = audioBuffer.getChannelData(0);
+
+        for (var c = 0; c < audioBuffer.numberOfChannels; c++) {
+            var chan = buffer.getChannelData(c);
+            for( var i = 0; i < chan.length; i++  ) {
+                var value = Math.abs(chan[i]);
+                max = Math.max(value, max);
+                min = Math.max(value, min);
+            }
+        }
+
+
+
+
+        for (var c = 0; c < channels; c++) {
+            var chan = buffer.getChannelData(c);
+
+            for (var i = 0; i < length; i++) {
+                var start = ~~(i * sampleSize);
+                var end = ~~(start + sampleSize);
+                var min = chan[0];
+                var max = chan[0];
+
+                for (var j = start; j < end; j += sampleStep) {
+                    var value = chan[j];
+
+                    if (value > max) {
+                        max = value;
+                    }
+
+                    if (value < min) {
+                        min = value;
+                    }
+                }
+
+                peaks[2 * i] = max;
+                peaks[2 * i + 1] = min;
+
+                if (c == 0 || max > mergedPeaks[2 * i]) {
+                    mergedPeaks[2 * i] = max;
+                }
+
+                if (c == 0 || min < mergedPeaks[2 * i + 1]) {
+                    mergedPeaks[2 * i + 1] = min;
+                }
+            }
+        }
+
+        return {
+            peaks :  splitChannels === true ? splitPeaks : mergedPeaks,
+            min   : min,
+            max   : max
+        };
+
+
+    };
+
+
+
+    function extractRegions  (Peaks, duration, min_percentage, minDuration ) {
         // Silence params
 
         min_percentage = min_percentage || 15;
@@ -125,13 +189,15 @@ if (require.main === module) { // Just to avoid mocha running this
             };
         });
   }
+
+
+
+
   //  'http://www.archive.org/download/mshortworks_001_1202_librivox/msw001_03_rashomon_akutagawa_mt_64kb.mp3'
 
   // fs.readFile(__dirname + '/sounds/powerpad.wav', function(err, buffer) {
-  //  fs.readFile(__dirname + '/sounds/001z.mp3', function(err, buffer) {
-
-
-  fs.readFile(__dirname + '/sounds/msw001_03_rashomon_akutagawa_mt_64kb.mp3', function(err, buffer) {
+    fs.readFile(__dirname + '/sounds/001z.mp3', function(err, buffer) {
+//  fs.readFile(__dirname + '/sounds/msw001_03_rashomon_akutagawa_mt_64kb.mp3', function(err, buffer) {
     if (err) throw err;
     context.decodeAudioData(buffer, function(audioBuffer, format) {
 
@@ -157,7 +223,7 @@ if (require.main === module) { // Just to avoid mocha running this
       bufferNode.loop = true;
 
       var peeks = getPeaks( audioBuffer, 1024 );
-      var regions = extractRegions( peeks, audioBuffer.duration );
+      var regions = extractRegions( audioBuffer );
       bufferNode.start(0)
     })
   })
